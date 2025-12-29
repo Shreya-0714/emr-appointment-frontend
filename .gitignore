@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+
+# Build outputs
+dist/
+build/
+
+# Cache folders
+.vite/
+.cache/
+.eslintcache
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE settings
+.vscode/
+.idea/
+
+# Test & coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.swp
