@@ -1,104 +1,67 @@
-# 🏥 EMR Appointment Management System
+# EMR Appointment Management System
 
-A modern web-based **Electronic Medical Records (EMR) Appointment Management System** for healthcare providers, featuring appointment booking, scheduling, and queue management.
+A modern, responsive Electronic Medical Records (EMR) Appointment Management System built for the SDE Intern Hiring Assignment. This project features a React frontend that simulates real-time appointment scheduling, calendar filtering, and status management, backed by a Python service layer design.
+
+🔗 **[View Live Demo](https://emr-appointment-frontend-b86l.vercel.app)**
 
 ---
 
 ## 🚀 Features
 
-- **Appointment Scheduling**: Create, view, and manage appointments
-- **Calendar View**: Interactive calendar with date-based filtering
-- **Status Management**: Confirm, cancel, or complete appointments
-- **Real-time Filtering**: Filter by date, status, and time period
-- **Conflict Detection**: Prevents double-booking of doctors
-- **Responsive UI**: Works seamlessly on desktop and mobile devices
+* **Interactive Calendar:** Filter appointments by selecting specific dates.
+* **Smart Filtering:** View appointments by "Today", "Upcoming", or "Past" tabs.
+* **Appointment Management:** Create, Cancel, Confirm, and Complete appointments.
+* **Conflict Detection:** Prevents double-booking doctors for the same time slot.
+* **Responsive Design:** Built with Tailwind CSS for a seamless mobile and desktop experience.
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend:**
-- React 18 with Hooks (useState, useEffect)
-- Tailwind CSS for styling
-- Lucide React for icons
-- Vite for build tooling
-
-**Backend Simulation:**
-- Python 3.x service layer
-- Mock data simulating Aurora PostgreSQL
-- GraphQL-style query/mutation structure
+* **Frontend:** React (Vite), Tailwind CSS, Lucide React (Icons).
+* **Backend Logic:** Python 3.x (Simulating AWS Lambda & AppSync).
+* **Data Layer:** In-memory mock database (Simulating Aurora PostgreSQL).
 
 ---
 
-## 📂 Project Structure
+## ⚙️ Local Setup & Installation
 
-```
-emr-appointment-system/
-├── src/
-│   ├── App.jsx                          # Root component
-│   ├── EMR_Frontend_Assignment.jsx      # Main appointment view
-│   ├── main.jsx                         # React entry point
-│   └── index.css                        # Global styles
-├── appointment_service.py               # Backend service logic
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-└── README.md
-```
+Follow these steps to run the project locally on your machine.
 
----
-
-## ⚙️ Installation & Setup
-
-### Prerequisites
-- Node.js 18+ and npm
-- Python 3.x (for backend service reference)
-
-### Steps
-
-1. **Clone the repository**
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/Shreya-0714/emr-appointment-frontend.git
+git clone [https://github.com/Shreya-0714/emr-appointment-frontend.git](https://github.com/Shreya-0714/emr-appointment-frontend.git)
 cd emr-appointment-frontend
-```
+2. Install Dependencies
+Bash
 
-2. **Install dependencies**
-```bash
 npm install
-```
+3. Run the Frontend
+Bash
 
-3. **Run the development server**
-```bash
 npm run dev
-```
+Open http://localhost:5173 in your browser to view the app.
 
-4. **Access the application**
-```
-http://localhost:5173
-```
+4. Test the Backend Logic
+The backend logic is contained in appointment_service.py. You can verify the functions work by running:
 
----
+Bash
 
-## 🔌 API Contract & GraphQL Structure
+python -c "import appointment_service; print(appointment_service.get_appointments())"
+📄 Technical Explanation (Assignment Requirement)
+1. GraphQL Query Structure
+For the get_appointments function, the design simulates a GraphQL query structure to fetch data efficiently. This structure minimizes over-fetching by using specific filters.
 
-### GraphQL Query Structure
+Simulated Query Design:
 
-In a production environment, the frontend would communicate with AWS AppSync using GraphQL queries. Here's the designed structure:
+GraphQL
 
-#### Query: Get Appointments
-```graphql
-query GetAppointments(
-  $date: String
-  $status: String
-  $doctorName: String
-) {
-  listAppointments(
-    filter: {
-      date: { eq: $date }
-      status: { eq: $status }
-      doctorName: { contains: $doctorName }
-    }
-  ) {
+query GetAppointments($date: String, $status: String, $doctorName: String) {
+  listAppointments(filter: {
+    date: { eq: $date }
+    status: { eq: $status }
+    doctorName: { contains: $doctorName }
+  }) {
     items {
       id
       patientName
@@ -111,241 +74,24 @@ query GetAppointments(
     }
   }
 }
-```
+2. Data Consistency Strategy
+To ensure data consistency in a production environment (using Python and PostgreSQL/Aurora), the appointment_service.py logic implies the following strategies:
 
-#### Mutation: Create Appointment
-```graphql
-mutation CreateAppointment($input: CreateAppointmentInput!) {
-  createAppointment(input: $input) {
-    id
-    patientName
-    date
-    time
-    duration
-    doctorName
-    status
-    mode
-  }
-}
-```
+ACID Transactions: All mutation operations (Create, Update, Delete) would be wrapped in database transactions (BEGIN ... COMMIT). This ensures that if any part of the operation fails, the entire transaction rolls back, preventing partial data states.
 
-#### Mutation: Update Appointment Status
-```graphql
-mutation UpdateAppointmentStatus($id: ID!, $status: String!) {
-  updateAppointment(input: { id: $id, status: $status }) {
-    id
-    status
-    patientName
-    date
-    time
-  }
-}
-```
+Conflict Detection: Before creating an appointment, the system proactively queries for existing appointments for the specific doctor and time slot. If an overlap is detected, the write is immediately rejected.
 
-#### Mutation: Delete Appointment
-```graphql
-mutation DeleteAppointment($id: ID!) {
-  deleteAppointment(input: { id: $id }) {
-    id
-  }
-}
-```
+Idempotency: In a real-world API, create_appointment would require an idempotency key to prevent duplicate appointments if a network request is retried.
 
-#### Subscription: Real-time Updates
-```graphql
-subscription OnAppointmentUpdated($id: ID!) {
-  onUpdateAppointment(filter: { id: { eq: $id } }) {
-    id
-    status
-    patientName
-    date
-    time
-  }
-}
-```
+Optimistic Locking: For updates, a version number check would be used to ensure the record hasn't been modified by another process since it was fetched.
 
----
-
-## 🔒 Data Consistency Strategy
-
-The backend service ensures data consistency through multiple layers:
-
-### 1. **ACID Transactions (Aurora PostgreSQL)**
-All mutations are wrapped in database transactions:
-```python
-BEGIN;
-INSERT INTO appointments (...) VALUES (...);
-COMMIT;  # Automatic rollback on failure
-```
-
-### 2. **Unique Constraints**
-Database-level constraints prevent invalid data:
-- Primary key on `appointment.id` (UUID)
-- Unique index on `(doctor_id, date, start_time)` prevents double-booking
-- Check constraints on status values and positive duration
-
-### 3. **Idempotency Keys**
-Prevents duplicate operations on network retries:
-```python
-# Client generates UUID for each mutation
-idempotency_key = str(uuid.uuid4())
-
-# Backend checks before executing
-if idempotency_keys.exists(key):
-    return cached_response  # Return previous result
-else:
-    execute_mutation()
-    cache_response(key, result)
-```
-
-### 4. **Optimistic Locking**
-Prevents lost updates from concurrent modifications:
-```python
-UPDATE appointments 
-SET status = $1, version = version + 1 
-WHERE id = $2 AND version = $3  # Only updates if version matches
-```
-
-### 5. **Time Conflict Detection**
-Before creating appointments:
-```python
-def check_time_conflict(doctor, date, time, duration):
-    existing = get_appointments(doctor=doctor, date=date)
-    for apt in existing:
-        if times_overlap(apt.time, apt.duration, time, duration):
-            raise ConflictError("Doctor already booked")
-```
-
-### 6. **AppSync Conflict Resolution**
-- **Conflict Detection**: Based on `updated_at` timestamp
-- **Resolution Strategy**: Automerge or reject
-- **Client Notification**: Conflict returned to client for retry
-
-### 7. **Validation Layers**
-Multiple validation levels ensure data integrity:
-- **Client-side**: Immediate feedback (form validation)
-- **AppSync Resolvers**: Schema validation (type checking)
-- **Lambda Functions**: Business logic validation
-- **Database**: Constraint enforcement
-
-### 8. **Audit Trail**
-Immutable audit log for compliance:
-```python
-audit_log.insert({
-    'action': 'UPDATE_STATUS',
-    'appointment_id': id,
-    'old_value': 'Scheduled',
-    'new_value': 'Confirmed',
-    'user_id': current_user,
-    'timestamp': now()
-})
-```
-
----
-
-## 🎯 Key Implementation Details
-
-### Calendar Filtering
-- Clicking a date triggers `fetchAppointments({ date: selectedDate })`
-- Instantly updates the appointment list
-- Shows active state on selected date
-
-### Tab Filtering
-- **All**: Shows all appointments
-- **Today**: Filters appointments where `date === today`
-- **Upcoming**: Shows future appointments with active statuses
-- **Past**: Shows completed or past-date appointments
-
-### Status Management
-- Click "Confirm" → Updates status to "Confirmed"
-- Click "Cancel" → Updates status to "Cancelled"
-- Click "Complete" → Updates status to "Completed"
-- All updates trigger backend mutation and refresh UI
-
-### Conflict Prevention
-- Creates new appointment only through backend API
-- Backend validates no overlapping times for same doctor
-- Returns error if conflict detected
-
----
-
-## 🚀 Deployment
-
-### Vercel Deployment
-
-1. **Push to GitHub**
-```bash
-git add .
-git commit -m "Complete EMR appointment system"
-git push origin main
-```
-
-2. **Deploy to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Import your GitHub repository
-   - Vercel auto-detects Vite configuration
-   - Click "Deploy"
-
-### Environment Variables (if needed)
-```env
-VITE_API_BASE_URL=https://your-api-endpoint.com
-```
-
----
-
-## 📊 Mock Data
-
-The system includes 12 pre-configured appointments spanning multiple dates and doctors:
-- 3 doctors: Dr. Sarah Johnson, Dr. Michael Chen, Dr. Emily Brown
-- Multiple appointment types: In-person, Video, Phone
-- Various statuses: Confirmed, Scheduled, Upcoming, Cancelled, Completed
-
----
-
-## 🎨 UI Features
-
-- **Modern Design**: Clean, professional healthcare interface
-- **Status Colors**: Visual indicators for appointment states
-- **Interactive Calendar**: Click to filter by date
-- **Modal Forms**: Smooth appointment creation experience
-- **Responsive Layout**: Adapts to all screen sizes
-
----
-
-## 🔮 Future Enhancements
-
-- User authentication & role-based access
-- Real-time notifications (SMS/Email)
-- Doctor availability scheduling
-- Patient medical history integration
-- Analytics dashboard
-- Payment processing
-- Multi-language support
-
----
-
-## 👩‍💻 Author
-
-**Shreya N S**  
-Bachelor of Engineering – Artificial Intelligence & Machine Learning  
-Passionate about building real-world healthcare applications using modern web technologies.
-
-🔗 **GitHub**: [Shreya-0714](https://github.com/Shreya-0714)
-
----
-
-## 📜 License
-
-This project is for educational and demonstration purposes as part of the SDE Intern Assignment.
-
----
-
-## 🙏 Acknowledgments
-
-- Assignment provided by hiring team
-- Built with React, Tailwind CSS, and Vite
-- Icons by Lucide React
-
----
-
-**Note**: This is a frontend simulation. In production, the Python backend would be deployed as AWS Lambda functions, connected to Aurora PostgreSQL via AWS AppSync GraphQL API.
+📂 Project Structure
+emr-appointment-frontend/
+├── src/
+│   ├── EMR_Frontend_Assignment.jsx  # Main UI Component
+│   ├── App.jsx                      # App Entry Point
+│   └── main.jsx                     # React Root
+├── appointment_service.py           # Backend Logic (Python)
+├── package.json                     # Dependencies
+├── tailwind.config.js               # Tailwind Configuration
+└── vite.config.js                   # Vite Configuration
